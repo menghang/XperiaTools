@@ -36,7 +36,7 @@ public class CpuSettings extends Fragment {
         // Inflate the layout for this fragment
         rootView = inflater.inflate(R.layout.fragment_cpu_settings, container, false);
         ImageView imageView1 = (ImageView)rootView.findViewById(R.id.imageView1);
-        imageView1.setImageResource(MainActivity.mPictureArray[MainActivity.getRandomPicture()]);
+        imageView1.setImageDrawable(getResources().getDrawable(MainActivity.mPictureArray[MainActivity.getRandomPicture()]));
         TextView textViewCpu = (TextView) rootView.findViewById(R.id.textView_cpu);
         textViewCpu.setText("CPU 0");
         Spinner spinner_cpu_max_freq = (Spinner) rootView.findViewById(R.id.spinner1);

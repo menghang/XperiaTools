@@ -57,7 +57,7 @@ public class KnockOnSettings extends Fragment {
         // Inflate the layout for this fragment
         rootView = inflater.inflate(R.layout.fragment_knock_on_settings, container, false);
         ImageView imageView1 = (ImageView)rootView.findViewById(R.id.imageView1);
-        imageView1.setImageResource(MainActivity.mPictureArray[MainActivity.getRandomPicture()]);
+        imageView1.setImageDrawable(getResources().getDrawable(MainActivity.mPictureArray[MainActivity.getRandomPicture()]));
         Switch switchKnockOn = (Switch) rootView.findViewById(R.id.switch_tap_to_wake);
         if ((!RootHelper.isDeviceRooted())
                 || (!ShellHelper.fileExists("/sys/devices/virtual/input/clearpad/wakeup_gesture"))) {

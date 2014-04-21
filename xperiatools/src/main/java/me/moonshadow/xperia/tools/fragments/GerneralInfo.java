@@ -58,7 +58,7 @@ public class GerneralInfo extends Fragment {
         // Inflate the layout for this fragment
         rootView = inflater.inflate(R.layout.fragment_gerneral_info, container, false);
         ImageView imageView1 = (ImageView)rootView.findViewById(R.id.imageView1);
-        imageView1.setImageResource(MainActivity.mPictureArray[MainActivity.getRandomPicture()]);
+        imageView1.setImageDrawable(getResources().getDrawable(MainActivity.mPictureArray[MainActivity.getRandomPicture()]));
         TextView textViewKernelInfo = (TextView) rootView.findViewById(R.id.textViewKernelInfo);
         textViewKernelInfo.setText(ShellHelper.getKernel());
         TextView textViewMemory = (TextView) rootView.findViewById(R.id.textView_memory);

@@ -1,0 +1,64 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="me.moonshadow.xperia.tools.fragments.CpuStatusPie">
+
+
+    <RelativeLayout
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_gravity="center">
+
+        <TextView
+            android:id="@+id/noCpuData"
+            style="?android:textAppearanceMedium"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:padding="32dp"
+            android:text="@string/nocpu_data"
+            android:textColor="?android:textColorSecondary" />
+
+        <com.echo.holographlibrary.PieGraph
+            android:id="@+id/graph"
+            android:layout_width="match_parent"
+            android:layout_height="220dp"
+            android:layout_marginTop="10dp" />
+
+        <TextView
+            android:id="@+id/statisticFreq"
+            android:layout_width="124dp"
+            android:layout_height="40dp"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="65dp"
+            android:gravity="center"
+            android:textSize="28dp" />
+
+        <TextView
+            android:id="@+id/statisticTime"
+            style="?android:textAppearanceLarge"
+            android:layout_width="144dp"
+            android:layout_height="30dp"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="105dp"
+            android:gravity="center" />
+
+        <TextView
+            android:id="@+id/statisticPercentage"
+            android:layout_width="124dp"
+            android:layout_height="45dp"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="130dp"
+            android:gravity="center"
+            android:textSize="42dp" />
+
+
+        <ListView
+            android:id="@+id/statisticListView"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:layout_marginTop="250dp" />
+
+    </RelativeLayout>
+</FrameLayout>

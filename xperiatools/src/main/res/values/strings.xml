@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">XperiaTools</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="action_settings">About</string>
+    <string name="touch">XperiaTools is designed for Xperia users. We can use it to control our Xperia.</string>
+    <string name="touch_switch">Double Tap to Wake</string>
+    <string name="set_on_boot">Set on Boot</string>
+    <string name="dlg_noroot_title">Your phone has no root</string>
+    <string name="dlg_noroot_body">Sorry, you must root you phone before you use this program!</string>
+    <string name="ok">OK</string>
+    <string name="falie">Operation failed</string>
+    <string name="falie_msg">The file that controls double tap to wake does not exist!</string>
+    <string name="get_root_falie">Something wrong happened</string>
+    <string name="get_root_falie_msg">There is something wrong happened. The reason may be that your Xperia has no root, etc.</string>
+    <string name="help">About XperiaTools</string>
+    <string name="help_msg">This program is designed for Xperia users. These features must be supported by the kernel that your Xperia runs with. </string>
+    <string name="summary_unsupported">Not supported</string>
+    <string name="boot_info">XperiaTool AutoBoots!</string>
+    <string name="kernel">Kernel Information</string>
+    <string name="cpu0">CPU0</string>
+    <string name="cpu1">CPU1</string>
+    <string name="cpu2">CPU2</string>
+    <string name="cpu3">CPU3</string>
+    <string name="cpu_max_freq">Max Clock Frequency</string>
+    <string name="cpu_min_freq">Min Clock Frequency</string>
+    <string name="cpu_governor">Governor</string>
+    <string name="io_scheduler">I/O Scheduler</string>
+    <string name="tab_title_1">General Information</string>
+    <string name="tab_title_2">CPU Status (Bar)</string>
+    <string name="tab_title_3">CPU Status (Pie)</string>
+    <string name="tab_title_4">CPU Settings</string>
+    <string name="tab_title_5">I/O Governor</string>
+    <string name="tab_title_6">Knock On Settings</string>
+    <string name="memory">Memory</string>
+    <string name="cpu_freq">CPU Frequencies</string>
+    <string name="gpu_freq">GPU Frequencies</string>
+    <string name="nocpu_data">Couldn\'t find any CPU data.</string>
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+
+</resources>

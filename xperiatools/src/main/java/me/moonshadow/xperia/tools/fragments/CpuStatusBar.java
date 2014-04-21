@@ -31,7 +31,7 @@ import me.moonshadow.xperia.tools.helpers.ShellHelper;
  */
 public class CpuStatusBar extends Fragment {
 
-    public static final String[] color_code = {
+    private static final String[] color_code = {
             "#1abc9c", /* Turquoise */
             "#FF8800", /* Orange */
             "#2c3e50", /* Midnight Blue */
@@ -41,22 +41,22 @@ public class CpuStatusBar extends Fragment {
             "#3498db", /* Peter River */
             "#e74c3c", /* Pomegrante */
     };
-    public static final String TIME_IN_STATE_PATH = "/sys/devices/system/cpu/cpu0/cpufreq/stats/time_in_state";
-    public static final String OFFSET_STAT = "/data/data/me.moonshadow.xperia.tools/files/offset_stat";
+    private static final String TIME_IN_STATE_PATH = "/sys/devices/system/cpu/cpu0/cpufreq/stats/time_in_state";
+    private static final String OFFSET_STAT = "/data/data/me.moonshadow.xperia.tools/files/offset_stat";
     private final static Typeface font = Typeface.create("sans-serif-condensed", Typeface.NORMAL);
-    public int mIndex = 0;
-    public String[] data;
-    public ListView statisticView;
-    public BarGraph bg;
-    public TextView txtFreq;
-    public TextView txtPercentage;
-    public TextView txtTime;
-    public ArrayList<Long> cpuTime = new ArrayList<Long>();
-    public ArrayList<Long> cpuOverallTime = new ArrayList<Long>();
-    public ArrayList<Long> cpuFreq = new ArrayList<Long>();
-    public ArrayList<Long> cpuPercentage = new ArrayList<Long>();
-    public ArrayList<Long> cpuResetTime;
-    public statisticInit[] mResult = new statisticInit[0];
+    private int mIndex = 0;
+    private String[] data;
+    private ListView statisticView;
+    private BarGraph bg;
+    private TextView txtFreq;
+    private TextView txtPercentage;
+    private TextView txtTime;
+    private ArrayList<Long> cpuTime = new ArrayList<Long>();
+    private ArrayList<Long> cpuOverallTime = new ArrayList<Long>();
+    private ArrayList<Long> cpuFreq = new ArrayList<Long>();
+    private ArrayList<Long> cpuPercentage = new ArrayList<Long>();
+    private ArrayList<Long> cpuResetTime;
+    private statisticInit[] mResult = new statisticInit[0];
     private int mColorIndex = 0;
     private View rootView;
     private double mCompleteTime = 0;
@@ -236,7 +236,7 @@ public class CpuStatusBar extends Fragment {
 
     }
 
-    public final void handleOnClick(ArrayList<String> list) {
+    private final void handleOnClick(ArrayList<String> list) {
 
         final String[] valueArray = list.toArray(new String[0]);
 
@@ -283,7 +283,7 @@ public class CpuStatusBar extends Fragment {
         mIndex++;
     }
 
-    public final void createList(ArrayList<Long> cpuFreq, ArrayList<Long> cpuTime, ArrayList<Long> cpuPercentage) {
+    private final void createList(ArrayList<Long> cpuFreq, ArrayList<Long> cpuTime, ArrayList<Long> cpuPercentage) {
 
         // Add Complete Uptime;
         cpuFreq.add((long) 1);
@@ -307,7 +307,7 @@ public class CpuStatusBar extends Fragment {
 
     }
 
-    public final String convertTime(long msTime) {
+    private final String convertTime(long msTime) {
 
         msTime = msTime * 10;
 
@@ -319,7 +319,7 @@ public class CpuStatusBar extends Fragment {
         );
     }
 
-    public void loadResetState() {
+    private void loadResetState() {
 
         /*
          * First Case; user resetted statistics, but closed app
@@ -346,7 +346,7 @@ public class CpuStatusBar extends Fragment {
 
     }
 
-    public final int getCpuData() {
+    private final int getCpuData() {
 
         File cpu_stats = new File(TIME_IN_STATE_PATH);
 
@@ -391,12 +391,12 @@ public class CpuStatusBar extends Fragment {
         /*
          * Just a wrapper;
          */
-        public final void loadArray(statisticInit[] resultSet, statisticInit data) {
+        private final void loadArray(statisticInit[] resultSet, statisticInit data) {
 
             mResult = fillArray(resultSet, data);
         }
 
-        public final statisticInit[] fillArray(statisticInit[] resultSet, statisticInit data) {
+        private final statisticInit[] fillArray(statisticInit[] resultSet, statisticInit data) {
 
             statisticInit[] result = Arrays.copyOf(resultSet, resultSet.length + 1);
             result[resultSet.length] = data;

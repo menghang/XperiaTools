@@ -9,8 +9,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
 import android.widget.Spinner;
 
+import me.moonshadow.xperia.tools.MainActivity;
 import me.moonshadow.xperia.tools.R;
 import me.moonshadow.xperia.tools.helpers.ShellHelper;
 
@@ -18,6 +20,7 @@ import me.moonshadow.xperia.tools.helpers.ShellHelper;
 public class IoGovernor extends Fragment {
 
     private Context context;
+    private View rootView;
 
     public IoGovernor(Context context) {
         // Required empty public constructor
@@ -29,7 +32,9 @@ public class IoGovernor extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        View rootView = inflater.inflate(R.layout.fragment_io_governor, container, false);
+        rootView = inflater.inflate(R.layout.fragment_io_governor, container, false);
+        ImageView imageView1 = (ImageView)rootView.findViewById(R.id.imageView1);
+        imageView1.setImageResource(MainActivity.mPictureArray[MainActivity.getRandomPicture()]);
         Spinner spinner_io = (Spinner) rootView.findViewById(R.id.spinner1);
         if (ShellHelper.fileExists("/sys/block/mmcblk0/queue/scheduler")) {
             String[] str_ios = ShellHelper.getInfoArray("/sys/block/mmcblk0/queue/scheduler", 0, 1);

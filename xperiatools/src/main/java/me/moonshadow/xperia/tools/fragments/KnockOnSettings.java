@@ -10,8 +10,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CompoundButton;
+import android.widget.ImageView;
 import android.widget.Switch;
 
+import me.moonshadow.xperia.tools.MainActivity;
 import me.moonshadow.xperia.tools.R;
 import me.moonshadow.xperia.tools.helpers.RootHelper;
 import me.moonshadow.xperia.tools.helpers.ShellHelper;
@@ -20,6 +22,7 @@ import me.moonshadow.xperia.tools.helpers.ShellHelper;
 public class KnockOnSettings extends Fragment {
 
     private Context context;
+    private View rootView;
 
     public KnockOnSettings(Context context) {
         // Required empty public constructor
@@ -52,7 +55,9 @@ public class KnockOnSettings extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        View rootView = inflater.inflate(R.layout.fragment_knock_on_settings, container, false);
+        rootView = inflater.inflate(R.layout.fragment_knock_on_settings, container, false);
+        ImageView imageView1 = (ImageView)rootView.findViewById(R.id.imageView1);
+        imageView1.setImageResource(MainActivity.mPictureArray[MainActivity.getRandomPicture()]);
         Switch switchKnockOn = (Switch) rootView.findViewById(R.id.switch_tap_to_wake);
         if ((!RootHelper.isDeviceRooted())
                 || (!ShellHelper.fileExists("/sys/devices/virtual/input/clearpad/wakeup_gesture"))) {

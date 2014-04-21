@@ -5,10 +5,12 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Fragment;
 import android.app.FragmentManager;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.v4.widget.DrawerLayout;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.ImageView;
 
 import me.moonshadow.xperia.tools.fragments.CpuSettings;
 import me.moonshadow.xperia.tools.fragments.CpuStatusBar;
@@ -43,6 +45,8 @@ public class MainActivity extends Activity
     private IoGovernor mIoGovernor;
     private KnockOnSettings mKnockOnSettings;
 
+    public static int[] mPictureArray;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -53,11 +57,21 @@ public class MainActivity extends Activity
         mTitle = getTitle();
 
         onSectionAttached(GERNERALINFO);
+        mPictureArray=new int[]{R.drawable.event_picture_1,R.drawable.event_picture_2,
+                R.drawable.event_picture_3,R.drawable.event_picture_4,R.drawable.event_picture_5,
+                R.drawable.event_picture_6,R.drawable.event_picture_7,R.drawable.event_picture_8,
+                R.drawable.event_picture_9,R.drawable.event_picture_10,R.drawable.event_picture_11,
+                R.drawable.event_picture_12,R.drawable.event_picture_13,R.drawable.event_picture_14,
+                R.drawable.event_picture_15,R.drawable.event_picture_16,R.drawable.event_picture_17,};
 
         // Set up the drawer.
         mNavigationDrawerFragment.setUp(
                 R.id.navigation_drawer,
                 (DrawerLayout) findViewById(R.id.drawer_layout));
+    }
+
+    public static int getRandomPicture(){
+        return (int)Math.round(Math.floor(Math.random()*16.9999));
     }
 
     @Override

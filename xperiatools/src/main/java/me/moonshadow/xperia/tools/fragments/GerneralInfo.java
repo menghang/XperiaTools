@@ -8,13 +8,17 @@ import android.os.Message;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
+import me.moonshadow.xperia.tools.MainActivity;
 import me.moonshadow.xperia.tools.R;
 import me.moonshadow.xperia.tools.helpers.ShellHelper;
 
 
 public class GerneralInfo extends Fragment {
+
+    private View rootView;
 
     private boolean mVisible = true;
     private Handler mRefreshHandler = new Handler() {
@@ -52,7 +56,9 @@ public class GerneralInfo extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        View rootView = inflater.inflate(R.layout.fragment_gerneral_info, container, false);
+        rootView = inflater.inflate(R.layout.fragment_gerneral_info, container, false);
+        ImageView imageView1 = (ImageView)rootView.findViewById(R.id.imageView1);
+        imageView1.setImageResource(MainActivity.mPictureArray[MainActivity.getRandomPicture()]);
         TextView textViewKernelInfo = (TextView) rootView.findViewById(R.id.textViewKernelInfo);
         textViewKernelInfo.setText(ShellHelper.getKernel());
         TextView textViewMemory = (TextView) rootView.findViewById(R.id.textView_memory);

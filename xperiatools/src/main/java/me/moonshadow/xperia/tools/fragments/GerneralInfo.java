@@ -13,6 +13,7 @@ import android.widget.TextView;
 import me.moonshadow.xperia.tools.R;
 import me.moonshadow.xperia.tools.helpers.ShellHelper;
 
+
 public class GerneralInfo extends Fragment {
 
     private boolean mVisible = true;

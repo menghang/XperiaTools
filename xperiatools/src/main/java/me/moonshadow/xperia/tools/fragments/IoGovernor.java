@@ -14,9 +14,7 @@ import android.widget.Spinner;
 import me.moonshadow.xperia.tools.R;
 import me.moonshadow.xperia.tools.helpers.ShellHelper;
 
-/**
- * A simple {@link android.support.v4.app.Fragment} subclass.
- */
+
 public class IoGovernor extends Fragment {
 
     private Context context;

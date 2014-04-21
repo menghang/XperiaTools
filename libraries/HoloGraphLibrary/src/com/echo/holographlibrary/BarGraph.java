@@ -24,12 +24,21 @@
 package com.echo.holographlibrary;
 
 import android.content.Context;
-import android.graphics.*;
+import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.Point;
+import android.graphics.Rect;
+import android.graphics.RectF;
+import android.graphics.Region;
 import android.graphics.drawable.NinePatchDrawable;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
+
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -62,17 +71,12 @@ public class BarGraph extends View {
         showBarText = show;
     }
 
-    public void setBars(ArrayList<Bar> points) {
-        this.points = points;
-        postInvalidate();
+    public String getUnit() {
+        return this.unit;
     }
 
     public void setUnit(String unit) {
         this.unit = unit;
-    }
-
-    public String getUnit() {
-        return this.unit;
     }
 
     public void appendUnit(Boolean doAppend) {
@@ -85,6 +89,11 @@ public class BarGraph extends View {
 
     public ArrayList<Bar> getBars() {
         return this.points;
+    }
+
+    public void setBars(ArrayList<Bar> points) {
+        this.points = points;
+        postInvalidate();
     }
 
     public void onDraw(Canvas ca) {

@@ -1,5 +1,6 @@
 package me.moonshadow.xperia.tools.fragments;
 
+
 import android.app.Fragment;
 import android.content.Context;
 import android.os.Bundle;
@@ -15,9 +16,7 @@ import me.moonshadow.xperia.tools.R;
 import me.moonshadow.xperia.tools.helpers.RootHelper;
 import me.moonshadow.xperia.tools.helpers.ShellHelper;
 
-/**
- * A simple {@link android.support.v4.app.Fragment} subclass.
- */
+
 public class CpuSettings extends Fragment {
 
     private Context context;

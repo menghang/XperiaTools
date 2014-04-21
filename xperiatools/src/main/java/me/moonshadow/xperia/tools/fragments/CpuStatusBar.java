@@ -26,9 +26,7 @@ import me.moonshadow.xperia.tools.adapter.StatisticAdapter;
 import me.moonshadow.xperia.tools.adapter.statisticInit;
 import me.moonshadow.xperia.tools.helpers.ShellHelper;
 
-/**
- * A simple {@link android.support.v4.app.Fragment} subclass.
- */
+
 public class CpuStatusBar extends Fragment {
 
     private static final String[] color_code = {

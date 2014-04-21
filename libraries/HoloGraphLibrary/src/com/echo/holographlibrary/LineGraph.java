@@ -24,17 +24,19 @@
 package com.echo.holographlibrary;
 
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.graphics.Bitmap;
-import android.graphics.Bitmap.Config;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Path.Direction;
 import android.graphics.Point;
+import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Region;
 import android.util.AttributeSet;
+import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -42,343 +44,474 @@ import java.util.ArrayList;
 
 public class LineGraph extends View {
 
-    private ArrayList<Line> lines = new ArrayList<Line>();
-    private Paint paint = new Paint();
-    private Paint txtPaint = new Paint();
-    private float minY = 0, minX = 0;
-    private float maxY = 0, maxX = 0;
-    private boolean isMaxYUserSet = false;
-    private int lineToFill = -1;
-    private int indexSelected = -1;
-    private OnPointClickedListener listener;
-    private Bitmap fullImage;
-    private boolean shouldUpdate = false;
-    private boolean showMinAndMax = false;
-    private boolean showHorizontalGrid = false;
-    private int gridColor = 0xffffffff;
+    private static final int DEFAULT_PADDING = 10;
+    private final int mDipPadding;
+    private final int mFillColor;
+    private final int mAxisColor;
+    private final float mStrokeWidth;
+    private final int mStrokeSpacing;
+    private ArrayList<Line> mLines = new ArrayList<Line>();
+    private Paint mPaint = new Paint();
+    private float mMinY = 0, mMinX = 0;
+    private float mMaxY = 0, mMaxX = 0;
+    private double mRangeYRatio = 0;
+    private double mRangeXRatio = 0;
+    private boolean mUserSetMaxX = false;
+    private int mLineToFill = -1;
+    private int mSelectedIndex = -1;
+    private OnPointClickedListener mListener;
+    private Bitmap mFullImage;
+    // Since this is a new addition, it has to default to false to be backwards compatible
+    private boolean mUseDips;
+    private Path mPath = new Path();
+    private PorterDuffXfermode mXfermode = new PorterDuffXfermode(PorterDuff.Mode.CLEAR);
+    private Canvas mCanvas;
 
     public LineGraph(Context context) {
         this(context, null);
     }
 
     public LineGraph(Context context, AttributeSet attrs) {
-        super(context, attrs);
-        txtPaint.setColor(0xffffffff);
-        txtPaint.setTextSize(20);
-        txtPaint.setAntiAlias(true);
+        this(context, attrs, 0);
     }
 
-    public void setGridColor(int color) {
-        gridColor = color;
+    public LineGraph(Context context, AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
+        mDipPadding = getPixelForDip(DEFAULT_PADDING);
+
+        TypedArray a = context.getTheme().obtainStyledAttributes(attrs, R.styleable.LineGraph, 0, 0);
+        mFillColor = a.getColor(R.styleable.LineGraph_strokeColor, Color.BLACK);
+        mAxisColor = a.getColor(R.styleable.LineGraph_lineAxisColor, Color.LTGRAY);
+        mStrokeWidth = a.getDimension(R.styleable.LineGraph_strokeWidth, 2);
+        mStrokeSpacing = a.getDimensionPixelSize(R.styleable.LineGraph_strokeSpacing, 10);
+        mUseDips = a.getBoolean(R.styleable.LineGraph_useDip, false);
     }
 
-    public void showHorizontalGrid(boolean show) {
-        showHorizontalGrid = show;
+    public boolean isUsingDips() {
+        return mUseDips;
     }
 
-    public void showMinAndMaxValues(boolean show) {
-        showMinAndMax = show;
-    }
-
-    public void setTextColor(int color) {
-        txtPaint.setColor(color);
-    }
-
-    public void setTextSize(float s) {
-        txtPaint.setTextSize(s);
-    }
-
-    public void update() {
-        shouldUpdate = true;
-        postInvalidate();
+    public void setUsingDips(boolean treatSizesAsDips) {
+        this.mUseDips = treatSizesAsDips;
     }
 
     public void removeAllLines() {
-        while (lines.size() > 0) {
-            lines.remove(0);
+        while (mLines.size() > 0) {
+            mLines.remove(0);
         }
-        shouldUpdate = true;
         postInvalidate();
     }
 
     public void addLine(Line line) {
-        lines.add(line);
-        shouldUpdate = true;
+        mLines.add(line);
         postInvalidate();
     }
 
+    public void addPointToLine(int lineIndex, double x, double y) {
+        addPointToLine(lineIndex, (float) x, (float) y);
+    }
+
+    public void addPointToLine(int lineIndex, float x, float y) {
+        LinePoint p = new LinePoint(x, y);
+
+        addPointToLine(lineIndex, p);
+    }
+
+    public double getRangeYRatio() {
+        return mRangeYRatio;
+    }
+
+    public void setRangeYRatio(double rr) {
+        this.mRangeYRatio = rr;
+    }
+
+    public double getRangeXRatio() {
+        return mRangeXRatio;
+    }
+
+    public void setRangeXRatio(double rr) {
+        this.mRangeXRatio = rr;
+    }
+
+    public void addPointToLine(int lineIndex, LinePoint point) {
+        Line line = getLine(lineIndex);
+        line.addPoint(point);
+        mLines.set(lineIndex, line);
+        resetLimits();
+        postInvalidate();
+    }
+
+    public void addPointsToLine(int lineIndex, LinePoint[] points) {
+        Line line = getLine(lineIndex);
+        for (LinePoint point : points) {
+            line.addPoint(point);
+        }
+        mLines.set(lineIndex, line);
+        resetLimits();
+        postInvalidate();
+    }
+
+    public void removeAllPointsAfter(int lineIndex, double x) {
+        removeAllPointsBetween(lineIndex, x, getMaxX());
+    }
+
+    public void removeAllPointsBefore(int lineIndex, double x) {
+        removeAllPointsBetween(lineIndex, getMinX(), x);
+    }
+
+    public void removeAllPointsBetween(int lineIndex, double startX, double finishX) {
+        Line line = getLine(lineIndex);
+        LinePoint[] pts = new LinePoint[line.getPoints().size()];
+        pts = line.getPoints().toArray(pts);
+        for (LinePoint point : pts) {
+            if (point.getX() >= startX && point.getX() <= finishX) {
+                line.removePoint(point);
+            }
+        }
+        mLines.set(lineIndex, line);
+        resetLimits();
+        postInvalidate();
+    }
+
+    public void removePointsFromLine(int lineIndex, LinePoint[] points) {
+        Line line = getLine(lineIndex);
+        for (LinePoint point : points) {
+            line.removePoint(point);
+        }
+        mLines.set(lineIndex, line);
+        resetLimits();
+        postInvalidate();
+    }
+
+    public void removePointFromLine(int lineIndex, float x, float y) {
+        LinePoint p = null;
+        Line line = getLine(lineIndex);
+        p = line.getPoint(x, y);
+        removePointFromLine(lineIndex, p);
+    }
+
+    public void removePointFromLine(int lineIndex, LinePoint point) {
+        Line line = getLine(lineIndex);
+        line.removePoint(point);
+        mLines.set(lineIndex, line);
+        resetLimits();
+        postInvalidate();
+    }
+
+    public void resetYLimits() {
+        float range = getMaxY() - getMinY();
+        setRangeY(getMinY() - range * getRangeYRatio(), getMaxY() + range * getRangeYRatio());
+    }
+
+    public void resetXLimits() {
+        float range = getMaxX() - getMinX();
+        setRangeX(getMinX() - range * getRangeXRatio(), getMaxX() + range * getRangeXRatio());
+    }
+
+    public void resetLimits() {
+        resetYLimits();
+        resetXLimits();
+    }
+
     public ArrayList<Line> getLines() {
-        return lines;
+        return mLines;
     }
 
     public void setLines(ArrayList<Line> lines) {
-        this.lines = lines;
+        this.mLines = lines;
     }
 
     public int getLineToFill() {
-        return lineToFill;
+        return mLineToFill;
     }
 
     public void setLineToFill(int indexOfLine) {
-        this.lineToFill = indexOfLine;
-        shouldUpdate = true;
+        this.mLineToFill = indexOfLine;
         postInvalidate();
     }
 
     public Line getLine(int index) {
-        return lines.get(index);
+        return mLines.get(index);
     }
 
     public int getSize() {
-        return lines.size();
+        return mLines.size();
     }
 
     public void setRangeY(float min, float max) {
-        minY = min;
-        maxY = max;
-        isMaxYUserSet = true;
+        mMinY = min;
+        mMaxY = max;
+    }
+
+    private void setRangeY(double min, double max) {
+        mMinY = (float) min;
+        mMaxY = (float) max;
+    }
+
+    public void setRangeX(float min, float max) {
+        mMinX = min;
+        mMaxX = max;
+        mUserSetMaxX = true;
+    }
+
+    private void setRangeX(double min, double max) {
+        mMinX = (float) min;
+        mMaxX = (float) max;
     }
 
     public float getMaxY() {
-        if (isMaxYUserSet) {
-            return maxY;
-        } else {
-            maxY = lines.get(0).getPoint(0).getY();
-            for (Line line : lines) {
-                for (LinePoint point : line.getPoints()) {
-                    if (point.getY() > maxY) {
-                        maxY = point.getY();
-                    }
-                }
+        float max = mLines.get(0).getPoint(0).getY();
+        for (Line line : mLines) {
+            for (LinePoint point : line.getPoints()) {
+                max = point.getY() > max ? point.getY() : max;
             }
-            return maxY;
         }
-
+        mMaxY = max;
+        return mMaxY;
     }
 
     public float getMinY() {
-        if (isMaxYUserSet) {
-            return minY;
-        } else {
-            float min = lines.get(0).getPoint(0).getY();
-            for (Line line : lines) {
-                for (LinePoint point : line.getPoints()) {
-                    if (point.getY() < min) min = point.getY();
-                }
+        float min = mLines.get(0).getPoint(0).getY();
+        for (Line line : mLines) {
+            for (LinePoint point : line.getPoints()) {
+                min = point.getY() < min ? point.getY() : min;
             }
-            minY = min;
-            return minY;
         }
+        mMinY = min;
+        return mMinY;
     }
 
-    public void setMinY(float minY) {
-        this.minY = minY;
+    public float getMinLimY() {
+        return mMinY;
+    }
+
+    public float getMaxLimY() {
+        return mMaxY;
+    }
+
+    public float getMinLimX() {
+        return mMinX;
+    }
+
+    public float getMaxLimX() {
+        if (mUserSetMaxX) {
+            return mMaxX;
+        } else {
+            return getMaxX();
+        }
     }
 
     public float getMaxX() {
-        float max = lines.get(0).getPoint(0).getX();
-        for (Line line : lines) {
+        float max = mLines.size() > 0 ? mLines.get(0).getPoint(0).getX() : 0;
+        for (Line line : mLines) {
             for (LinePoint point : line.getPoints()) {
-                if (point.getX() > max) max = point.getX();
+                max = point.getX() > max ? point.getX() : max;
             }
         }
-        maxX = max;
-        return maxX;
+        mMaxX = max;
+        return mMaxX;
 
     }
 
     public float getMinX() {
-        float max = lines.get(0).getPoint(0).getX();
-        for (Line line : lines) {
+        float min = mLines.size() > 0 ? mLines.get(0).getPoint(0).getX() : 0;
+        for (Line line : mLines) {
             for (LinePoint point : line.getPoints()) {
-                if (point.getX() < max) max = point.getX();
+                min = point.getX() < min ? point.getX() : min;
             }
         }
-        maxX = max;
-        return maxX;
+        mMinX = min;
+        return mMinX;
     }
 
-    public void onDraw(Canvas ca) {
-        if (fullImage == null || shouldUpdate) {
-            fullImage = Bitmap.createBitmap(getWidth(), getHeight(), Config.ARGB_8888);
-            Canvas canvas = new Canvas(fullImage);
-            String max = (int) maxY + "";// used to display max
-            String min = (int) minY + "";// used to display min
-            paint.reset();
-            Path path = new Path();
+    public void onDraw(Canvas canvas) {
+        if (null == mFullImage) {
+            mFullImage = Bitmap.createBitmap(getWidth(), getHeight(), Bitmap.Config.ARGB_8888);
+            mCanvas = new Canvas(mFullImage);
+        }
 
-            float bottomPadding = 1, topPadding = 0;
-            float sidePadding = 10;
-            if (this.showMinAndMax)
-                sidePadding = txtPaint.measureText(max);
+        mCanvas.drawColor(Color.WHITE);
+        mPaint.reset();
+        float bottomPadding = 10, topPadding = 10;
+        float sidePadding = 10;
+        if (mUseDips) {
+            bottomPadding = mDipPadding;
+            topPadding = mDipPadding;
+            sidePadding = mDipPadding;
+        }
+        float usableHeight = getHeight() - bottomPadding - topPadding;
+        float usableWidth = getWidth() - 2 * sidePadding;
 
-            float usableHeight = getHeight() - bottomPadding - topPadding;
-            float usableWidth = getWidth() - sidePadding * 2;
-            float lineSpace = usableHeight / 10;
+        float maxY = getMaxLimY();
+        float minY = getMinLimY();
+        float maxX = getMaxLimX();
+        float minX = getMinLimX();
 
-            int lineCount = 0;
-            for (Line line : lines) {
-                int count = 0;
-                float lastXPixels = 0, newYPixels;
-                float lastYPixels = 0, newXPixels;
-                float maxY = getMaxY();
-                float minY = getMinY();
-                float maxX = getMaxX();
-                float minX = getMinX();
 
-                if (lineCount == lineToFill) {
-                    paint.setColor(Color.BLACK);
-                    paint.setAlpha(30);
-                    paint.setStrokeWidth(2);
-                    for (int i = 10; i - getWidth() < getHeight(); i = i + 20) {
-                        canvas.drawLine(i, getHeight() - bottomPadding, 0, getHeight() - bottomPadding - i, paint);
-                    }
+        int lineCount = 0;
+        for (Line line : mLines) {
+            int count = 0;
+            float lastXPixels = 0, newYPixels = 0;
+            float lastYPixels = 0, newXPixels = 0;
 
-                    paint.reset();
-
-                    paint.setXfermode(new PorterDuffXfermode(android.graphics.PorterDuff.Mode.CLEAR));
-                    for (LinePoint p : line.getPoints()) {
-                        float yPercent = (p.getY() - minY) / (maxY - minY);
-                        float xPercent = (p.getX() - minX) / (maxX - minX);
-                        if (count == 0) {
-                            lastXPixels = sidePadding + (xPercent * usableWidth);
-                            lastYPixels = getHeight() - bottomPadding - (usableHeight * yPercent);
-                            path.moveTo(lastXPixels, lastYPixels);
-                        } else {
-                            newXPixels = sidePadding + (xPercent * usableWidth);
-                            newYPixels = getHeight() - bottomPadding - (usableHeight * yPercent);
-                            path.lineTo(newXPixels, newYPixels);
-                            Path pa = new Path();
-                            pa.moveTo(lastXPixels, lastYPixels);
-                            pa.lineTo(newXPixels, newYPixels);
-                            pa.lineTo(newXPixels, 0);
-                            pa.lineTo(lastXPixels, 0);
-                            pa.close();
-                            canvas.drawPath(pa, paint);
-                            lastXPixels = newXPixels;
-                            lastYPixels = newYPixels;
-                        }
-                        count++;
-                    }
-
-                    path.reset();
-
-                    path.moveTo(0, getHeight() - bottomPadding);
-                    path.lineTo(sidePadding, getHeight() - bottomPadding);
-                    path.lineTo(sidePadding, 0);
-                    path.lineTo(0, 0);
-                    path.close();
-                    canvas.drawPath(path, paint);
-
-                    path.reset();
-
-                    path.moveTo(getWidth(), getHeight() - bottomPadding);
-                    path.lineTo(getWidth() - sidePadding, getHeight() - bottomPadding);
-                    path.lineTo(getWidth() - sidePadding, 0);
-                    path.lineTo(getWidth(), 0);
-                    path.close();
-
-                    canvas.drawPath(path, paint);
-
+            if (lineCount == mLineToFill) {
+                // Draw lines
+                mPaint.setColor(mFillColor);
+                mPaint.setStrokeWidth(mStrokeWidth);
+                for (int i = 10; i - getWidth() < getHeight(); i = i + mStrokeSpacing) {
+                    mCanvas.drawLine(
+                            i, getHeight() - bottomPadding,
+                            0, getHeight() - bottomPadding - i, mPaint);
                 }
 
-                lineCount++;
-            }
-
-            paint.reset();
-
-            paint.setColor(this.gridColor);
-            paint.setAlpha(50);
-            paint.setAntiAlias(true);
-            canvas.drawLine(sidePadding, getHeight() - bottomPadding, getWidth(), getHeight() - bottomPadding, paint);
-            if (this.showHorizontalGrid)
-                for (int i = 1; i <= 10; i++) {
-                    canvas.drawLine(sidePadding, getHeight() - bottomPadding - (i * lineSpace), getWidth(), getHeight() - bottomPadding - (i * lineSpace), paint);
-                }
-            paint.setAlpha(255);
-
-
-            for (Line line : lines) {
-                int count = 0;
-                float lastXPixels = 0, newYPixels;
-                float lastYPixels = 0, newXPixels;
-                float maxY = getMaxY();
-                float minY = getMinY();
-                float maxX = getMaxX();
-                float minX = getMinX();
-
-                paint.setColor(line.getColor());
-                paint.setStrokeWidth(6);
-
+                // Erase lines above the line
+                mPaint.reset();
+                mPaint.setXfermode(mXfermode);
                 for (LinePoint p : line.getPoints()) {
                     float yPercent = (p.getY() - minY) / (maxY - minY);
                     float xPercent = (p.getX() - minX) / (maxX - minX);
                     if (count == 0) {
                         lastXPixels = sidePadding + (xPercent * usableWidth);
                         lastYPixels = getHeight() - bottomPadding - (usableHeight * yPercent);
+                        mPath.moveTo(lastXPixels, lastYPixels);
                     } else {
                         newXPixels = sidePadding + (xPercent * usableWidth);
                         newYPixels = getHeight() - bottomPadding - (usableHeight * yPercent);
-                        canvas.drawLine(lastXPixels, lastYPixels, newXPixels, newYPixels, paint);
+                        mPath.lineTo(newXPixels, newYPixels);
+                        mPath.moveTo(lastXPixels, lastYPixels);
+                        mPath.lineTo(newXPixels, newYPixels);
+                        mPath.lineTo(newXPixels, 0);
+                        mPath.lineTo(lastXPixels, 0);
+                        mPath.close();
+                        mCanvas.drawPath(mPath, mPaint);
                         lastXPixels = newXPixels;
                         lastYPixels = newYPixels;
                     }
                     count++;
                 }
+
+                mPath.reset();
+                mPath.moveTo(0, getHeight() - bottomPadding);
+                mPath.lineTo(sidePadding, getHeight() - bottomPadding);
+                mPath.lineTo(sidePadding, 0);
+                mPath.lineTo(0, 0);
+                mPath.close();
+                mCanvas.drawPath(mPath, mPaint);
+
+                mPath.reset();
+                mPath.moveTo(getWidth(), getHeight() - bottomPadding);
+                mPath.lineTo(getWidth() - sidePadding, getHeight() - bottomPadding);
+                mPath.lineTo(getWidth() - sidePadding, 0);
+                mPath.lineTo(getWidth(), 0);
+                mPath.close();
+
+                mCanvas.drawPath(mPath, mPaint);
             }
+            lineCount++;
+        }
 
+        // Draw x-axis line
+        mPaint.reset();
+        mPaint.setColor(mAxisColor);
+        mPaint.setStrokeWidth(2 * getResources().getDisplayMetrics().density);
+        mPaint.setAntiAlias(true);
+        mCanvas.drawLine(
+                sidePadding, getHeight() - bottomPadding,
+                getWidth() - sidePadding, getHeight() - bottomPadding, mPaint);
+        mPaint.reset();
 
-            int pointCount = 0;
+        // Draw lines
+        for (Line line : mLines) {
+            int count = 0;
+            float lastXPixels = 0, newYPixels = 0;
+            float lastYPixels = 0, newXPixels = 0;
 
-            for (Line line : lines) {
-                float maxY = getMaxY();
-                float minY = getMinY();
-                float maxX = getMaxX();
-                float minX = getMinX();
+            mPaint.setColor(line.getColor());
+            mPaint.setStrokeWidth(getStrokeWidth(line));
 
-                paint.setColor(line.getColor());
-                paint.setStrokeWidth(6);
-                paint.setStrokeCap(Paint.Cap.ROUND);
-
-                if (line.isShowingPoints()) {
-                    for (LinePoint p : line.getPoints()) {
-                        float yPercent = (p.getY() - minY) / (maxY - minY);
-                        float xPercent = (p.getX() - minX) / (maxX - minX);
-                        float xPixels = sidePadding + (xPercent * usableWidth);
-                        float yPixels = getHeight() - bottomPadding - (usableHeight * yPercent);
-
-                        paint.setColor(Color.GRAY);
-                        canvas.drawCircle(xPixels, yPixels, 10, paint);
-                        paint.setColor(Color.WHITE);
-                        canvas.drawCircle(xPixels, yPixels, 5, paint);
-
-                        Path path2 = new Path();
-                        path2.addCircle(xPixels, yPixels, 30, Direction.CW);
-                        p.setPath(path2);
-                        p.setRegion(new Region((int) (xPixels - 30), (int) (yPixels - 30), (int) (xPixels + 30), (int) (yPixels + 30)));
-
-                        if (indexSelected == pointCount && listener != null) {
-                            paint.setColor(Color.parseColor("#33B5E5"));
-                            paint.setAlpha(100);
-                            canvas.drawPath(p.getPath(), paint);
-                            paint.setAlpha(255);
-                        }
-
-                        pointCount++;
-                    }
+            for (LinePoint p : line.getPoints()) {
+                float yPercent = (p.getY() - minY) / (maxY - minY);
+                float xPercent = (p.getX() - minX) / (maxX - minX);
+                if (count == 0) {
+                    lastXPixels = sidePadding + (xPercent * usableWidth);
+                    lastYPixels = getHeight() - bottomPadding - (usableHeight * yPercent);
+                } else {
+                    newXPixels = sidePadding + (xPercent * usableWidth);
+                    newYPixels = getHeight() - bottomPadding - (usableHeight * yPercent);
+                    mCanvas.drawLine(lastXPixels, lastYPixels, newXPixels, newYPixels, mPaint);
+                    lastXPixels = newXPixels;
+                    lastYPixels = newYPixels;
                 }
-            }
-
-            shouldUpdate = false;
-            if (this.showMinAndMax) {
-                ca.drawText(max, 0, txtPaint.getTextSize(), txtPaint);
-                ca.drawText(min, 0, this.getHeight(), txtPaint);
+                count++;
             }
         }
 
-        ca.drawBitmap(fullImage, 0, 0, null);
+        // Draw points
+        int pointCount = 0;
+        for (Line line : mLines) {
+            mPaint.setColor(line.getColor());
+            mPaint.setStrokeWidth(getStrokeWidth(line));
+            mPaint.setStrokeCap(Paint.Cap.ROUND);
 
+            if (line.isShowingPoints()) {
+                for (LinePoint p : line.getPoints()) {
+                    float yPercent = (p.getY() - minY) / (maxY - minY);
+                    float xPercent = (p.getX() - minX) / (maxX - minX);
+                    float xPixels = sidePadding + (xPercent * usableWidth);
+                    float yPixels = getHeight() - bottomPadding - (usableHeight * yPercent);
 
+                    int outerRadius;
+                    if (line.isUsingDips()) {
+                        outerRadius = getPixelForDip(line.getStrokeWidth() + 4);
+                    } else {
+                        outerRadius = line.getStrokeWidth() + 4;
+                    }
+                    int innerRadius = outerRadius / 2;
+
+                    mPaint.setColor(p.getColor());
+                    mCanvas.drawCircle(xPixels, yPixels, outerRadius, mPaint);
+                    mPaint.setColor(Color.WHITE);
+                    mCanvas.drawCircle(xPixels, yPixels, innerRadius, mPaint);
+
+                    // Create selection region
+                    Path path = p.getPath();
+                    path.reset();
+                    outerRadius *= 2;
+                    path.addCircle(xPixels, yPixels, outerRadius, Direction.CW);
+                    p.getRegion().set((int) (xPixels - outerRadius),
+                            (int) (yPixels - outerRadius),
+                            (int) (xPixels + outerRadius),
+                            (int) (yPixels + outerRadius));
+
+                    // Draw selection
+                    if (mSelectedIndex == pointCount && mListener != null) {
+                        mPaint.setColor(p.getSelectedColor());
+                        mCanvas.drawPath(p.getPath(), mPaint);
+                        mPaint.setAlpha(255);
+                    }
+
+                    pointCount++;
+                }
+            }
+        }
+        canvas.drawBitmap(mFullImage, 0, 0, null);
+    }
+
+    private int getStrokeWidth(Line line) {
+        int strokeWidth;
+        if (line.isUsingDips()) {
+            strokeWidth = getPixelForDip(line.getStrokeWidth());
+        } else {
+            strokeWidth = line.getStrokeWidth();
+        }
+        return strokeWidth;
+    }
+
+    private int getPixelForDip(int dipValue) {
+        return (int) TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP,
+                dipValue,
+                getResources().getDisplayMetrics());
     }
 
     @Override
@@ -393,39 +526,44 @@ public class LineGraph extends View {
         int pointCount;
 
         Region r = new Region();
-        for (Line line : lines) {
+        for (Line line : mLines) {
             pointCount = 0;
             for (LinePoint p : line.getPoints()) {
+                r.setPath(p.getPath(), p.getRegion());
 
-                if (p.getPath() != null && p.getRegion() != null) {
-                    r.setPath(p.getPath(), p.getRegion());
-                    if (r.contains(point.x, point.y) && event.getAction() == MotionEvent.ACTION_DOWN) {
-                        indexSelected = count;
-                    } else if (event.getAction() == MotionEvent.ACTION_UP) {
-                        if (r.contains(point.x, point.y) && listener != null) {
-                            listener.onClick(lineCount, pointCount);
+                switch (event.getAction()) {
+                    default:
+                        break;
+                    case MotionEvent.ACTION_DOWN:
+                        if (r.contains(point.x, point.y)) {
+                            mSelectedIndex = count;
+                            postInvalidate();
                         }
-                        indexSelected = -1;
-                    }
+                        break;
+                    case MotionEvent.ACTION_UP:
+                        if (count == mSelectedIndex
+                                && mListener != null
+                                && r.contains(point.x, point.y)) {
+                            mListener.onClick(lineCount, pointCount);
+                        }
+                        break;
                 }
-
                 pointCount++;
                 count++;
             }
             lineCount++;
-
         }
-
-        if (event.getAction() == MotionEvent.ACTION_DOWN || event.getAction() == MotionEvent.ACTION_UP) {
-            shouldUpdate = true;
+        // Reset selection
+        if (MotionEvent.ACTION_UP == event.getAction()
+                || MotionEvent.ACTION_CANCEL == event.getAction()) {
+            mSelectedIndex = -1;
             postInvalidate();
         }
-
         return true;
     }
 
     public void setOnPointClickedListener(OnPointClickedListener listener) {
-        this.listener = listener;
+        this.mListener = listener;
     }
 
     public interface OnPointClickedListener {

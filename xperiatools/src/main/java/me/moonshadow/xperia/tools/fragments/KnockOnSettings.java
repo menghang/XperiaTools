@@ -44,7 +44,7 @@ public class KnockOnSettings extends Fragment {
         return value;
     }
 
-    public static void changeBootValue(Context context, boolean value) {
+    private static void changeBootValue(Context context, boolean value) {
         SharedPreferences.Editor settingsEditor
                 = PreferenceManager.getDefaultSharedPreferences(context).edit();
         settingsEditor.putBoolean("boot", value);
@@ -56,7 +56,7 @@ public class KnockOnSettings extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         rootView = inflater.inflate(R.layout.fragment_knock_on_settings, container, false);
-        ImageView imageView1 = (ImageView)rootView.findViewById(R.id.imageView1);
+        ImageView imageView1 = (ImageView) rootView.findViewById(R.id.imageView1);
         imageView1.setImageDrawable(getResources().getDrawable(MainActivity.mPictureArray[MainActivity.getRandomPicture()]));
         Switch switchKnockOn = (Switch) rootView.findViewById(R.id.switch_tap_to_wake);
         if ((!RootHelper.isDeviceRooted())

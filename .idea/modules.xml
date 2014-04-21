@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/libraries/HoloGraphLibrary/HoloGraphLibrary.iml" filepath="$PROJECT_DIR$/libraries/HoloGraphLibrary/HoloGraphLibrary.iml" />
+      <module fileurl="file://$PROJECT_DIR$/libraries/HoloGraphLibrary/HoloGraphLibrary.iml" filepath="$PROJECT_DIR$/libraries/HoloGraphLibrary/HoloGraphLibrary.iml" />
       <module fileurl="file://$PROJECT_DIR$/XperiaTools.iml" filepath="$PROJECT_DIR$/XperiaTools.iml" />
       <module fileurl="file://$PROJECT_DIR$/xperiatools/xperiatools.iml" filepath="$PROJECT_DIR$/xperiatools/xperiatools.iml" />
     </modules>

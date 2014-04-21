@@ -1,7 +1,7 @@
 <component name="libraryTable">
   <library name="annotations">
     <CLASSES>
-      <root url="jar://$PROJECT_DIR$/libraries/HoloGraphLibrary/libs/annotations.jar!/" />
+      <root url="jar://$PROJECT_DIR$/xperiatools/build/exploded-aar/XperiaTools.libraries/HoloGraphLibrary/unspecified/libs/annotations.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />

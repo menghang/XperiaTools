@@ -207,7 +207,8 @@ public class CpuStatusPie extends Fragment {
 
                 slice.setValue(percentage);
                 slice.setColor(Color.parseColor(color_code[j]));
-                pg.setThickness(30);
+                pg.setInnerCircleRatio(150);
+                pg.setPadding(1);
                 pg.addSlice(slice);
 
                 j++;

@@ -33,7 +33,7 @@ public class IoGovernor extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         rootView = inflater.inflate(R.layout.fragment_io_governor, container, false);
-        ImageView imageView1 = (ImageView)rootView.findViewById(R.id.imageView1);
+        ImageView imageView1 = (ImageView) rootView.findViewById(R.id.imageView1);
         imageView1.setImageDrawable(getResources().getDrawable(MainActivity.mPictureArray[MainActivity.getRandomPicture()]));
         Spinner spinner_io = (Spinner) rootView.findViewById(R.id.spinner1);
         if (ShellHelper.fileExists("/sys/block/mmcblk0/queue/scheduler")) {

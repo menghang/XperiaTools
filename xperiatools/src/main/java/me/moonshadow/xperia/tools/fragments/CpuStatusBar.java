@@ -179,6 +179,7 @@ public class CpuStatusBar extends Fragment {
         int j = 0;
 
         ArrayList<Bar> bar = new ArrayList<Bar>();
+        float max_bar = 0;
         for (long g : cpuTime) {
 
             String frequency, time_in_state;
@@ -203,7 +204,12 @@ public class CpuStatusBar extends Fragment {
                 Bar tmpBar = new Bar();
                 cpuGraphValues.add(frequency + " " + time_in_state + " " + percentage + "%");
 
-                tmpBar.setValue((float) percentage / 100);
+                float p = (float) percentage;
+                if (p > max_bar) {
+                    max_bar = p;
+                }
+                tmpBar.setValue(p);
+                tmpBar.setValueString(String.valueOf(percentage) + "%");
                 tmpBar.setName(frequency);
                 tmpBar.setColor(Color.parseColor(color_code[j]));
                 bar.add(tmpBar);
@@ -212,7 +218,9 @@ public class CpuStatusBar extends Fragment {
             i++;
         }
         bg.setBars(bar);
-        bg.setUnit(" ");
+        bg.setPadding(1);
+        bg.setBottomPadding(10);
+
         // Fill our listview with final values and load TextViews;
         createList(cpuFreq, cpuTime, cpuPercentage);
         if (firstView)

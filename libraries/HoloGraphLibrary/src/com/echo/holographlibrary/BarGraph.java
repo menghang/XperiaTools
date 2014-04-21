@@ -1,9 +1,9 @@
 /*
- * 	   Created by Daniel Nadeau
- * 	   daniel.nadeau01@gmail.com
- * 	   danielnadeau.blogspot.com
+ *     Created by Daniel Nadeau
+ *     daniel.nadeau01@gmail.com
+ *     danielnadeau.blogspot.com
  * 
- * 	   Licensed to the Apache Software Foundation (ASF) under one
+ *     Licensed to the Apache Software Foundation (ASF) under one
        or more contributor license agreements.  See the NOTICE file
        distributed with this work for additional information
        regarding copyright ownership.  The ASF licenses this file
@@ -24,191 +24,269 @@
 package com.echo.holographlibrary;
 
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.Bitmap.Config;
+import android.content.res.Resources;
+import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Point;
 import android.graphics.Rect;
-import android.graphics.RectF;
 import android.graphics.Region;
 import android.graphics.drawable.NinePatchDrawable;
 import android.util.AttributeSet;
+import android.util.SparseArray;
 import android.view.MotionEvent;
 import android.view.View;
-
-import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 
 public class BarGraph extends View {
 
-    private ArrayList<Bar> points = new ArrayList<Bar>();
-    private Paint p = new Paint();
-    private Path path = new Path();
-    private Rect r;
-    private boolean showBarText = true;
-    private int indexSelected = -1;
-    private OnBarClickedListener listener;
-    private Bitmap fullImage;
-    private boolean shouldUpdate = false;
-    private String unit = "$";
-    private Boolean append = false;
-    private Rect r2 = new Rect();
-    private Rect r3 = new Rect();
+    private static final int VALUE_FONT_SIZE = 30;
+    private static final int AXIS_LABEL_FONT_SIZE = 15;
+    // How much space to leave between labels when shrunken. Increase for less space.
+    private static final float LABEL_PADDING_MULTIPLIER = 1.6f;
+    private static final int ORIENTATION_HORIZONTAL = 0;
+    private static final int ORIENTATION_VERTICAL = 1;
+
+    private final int mOrientation;
+    private ArrayList<Bar> mBars = new ArrayList<Bar>();
+    private Paint mPaint = new Paint();
+    private Rect mBoundsRect = new Rect();
+    private Rect mTextRect = new Rect();
+    private boolean mShowBarText = true;
+    private boolean mShowAxis = true;
+    private int mSelectedIndex = -1;
+    private OnBarClickedListener mListener;
+    private int mAxisColor;
+    private int mPadding = 7;
+    private int mBottomPadding = 30;
 
     public BarGraph(Context context) {
-        super(context);
+        this(context, null);
     }
 
     public BarGraph(Context context, AttributeSet attrs) {
-        super(context, attrs);
+        this(context, attrs, 0);
+    }
+
+    public BarGraph(Context context, AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
+
+        TypedArray a = getContext().obtainStyledAttributes(attrs, R.styleable.BarGraph);
+        mOrientation = a.getInt(R.styleable.BarGraph_orientation, ORIENTATION_VERTICAL);
+        mAxisColor = a.getColor(R.styleable.BarGraph_barAxisColor, Color.LTGRAY);
     }
 
     public void setShowBarText(boolean show) {
-        showBarText = show;
+        mShowBarText = show;
     }
 
-    public String getUnit() {
-        return this.unit;
+    public void setShowAxis(boolean show) {
+        mShowAxis = show;
     }
 
-    public void setUnit(String unit) {
-        this.unit = unit;
+    public void setPadding(int padding) {
+        this.mPadding = padding;
     }
 
-    public void appendUnit(Boolean doAppend) {
-        this.append = doAppend;
-    }
-
-    public Boolean isAppended() {
-        return this.append;
+    public void setBottomPadding(int bottomPadding) {
+        this.mBottomPadding = bottomPadding;
     }
 
     public ArrayList<Bar> getBars() {
-        return this.points;
+        return this.mBars;
     }
 
     public void setBars(ArrayList<Bar> points) {
-        this.points = points;
+        this.mBars = points;
         postInvalidate();
     }
 
-    public void onDraw(Canvas ca) {
+    public void setAxisColor(int axisColor) {
+        mAxisColor = axisColor;
+    }
 
-        if (fullImage == null || shouldUpdate) {
-            fullImage = Bitmap.createBitmap(getWidth(), getHeight(), Config.ARGB_8888);
-            Canvas canvas = new Canvas(fullImage);
-            canvas.drawColor(Color.TRANSPARENT);
-            NinePatchDrawable popup = (NinePatchDrawable) this.getResources().getDrawable(R.drawable.popup_black);
+    public void onDraw(Canvas canvas) {
+        final Resources resources = getContext().getResources();
 
-            float maxValue = 0;
-            float padding = 7;
-            int selectPadding = 4;
-            float bottomPadding = 40;
+        canvas.drawColor(Color.TRANSPARENT);
+        NinePatchDrawable popup = (NinePatchDrawable) resources.getDrawable(R.drawable.popup_black);
 
-            float usableHeight;
-            if (showBarText) {
-                this.p.setTextSize(40);
-                this.p.getTextBounds(unit, 0, 1, r3);
-                usableHeight = getHeight() - bottomPadding - Math.abs(r3.top - r3.bottom) - 26;
-            } else {
-                usableHeight = getHeight() - bottomPadding;
-            }
+        float maxValue = 0;
+        float padding = mPadding * resources.getDisplayMetrics().density;
+        float bottomPadding = mBottomPadding * resources.getDisplayMetrics().density;
 
-
-            p.setColor(Color.BLACK);
-            p.setStrokeWidth(2);
-            p.setAlpha(50);
-            p.setAntiAlias(true);
-
-            canvas.drawLine(0, getHeight() - bottomPadding + 10, getWidth(), getHeight() - bottomPadding + 10, p);
-
-            float barWidth = (getWidth() - (padding * 2) * points.size()) / points.size();
-
-            for (Bar p : points) {
-                maxValue += p.getValue();
-            }
-
-            r = new Rect();
-
-            path.reset();
-
-            int count = 0;
-            for (Bar p : points) {
-                r.set((int) ((padding * 2) * count + padding + barWidth * count), (int) (getHeight() - bottomPadding - (usableHeight * (p.getValue() / maxValue))), (int) ((padding * 2) * count + padding + barWidth * (count + 1)), (int) (getHeight() - bottomPadding));
-
-                path.addRect(new RectF(r.left - selectPadding, r.top - selectPadding, r.right + selectPadding, r.bottom + selectPadding), Path.Direction.CW);
-                p.setPath(path);
-                p.setRegion(new Region(r.left - selectPadding, r.top - selectPadding, r.right + selectPadding, r.bottom + selectPadding));
-
-                this.p.setColor(p.getColor());
-                this.p.setAlpha(255);
-                canvas.drawRect(r, this.p);
-                this.p.setTextSize(20);
-                canvas.drawText(p.getName(), (int) (((r.left + r.right) / 2) - (this.p.measureText(p.getName()) / 2)), getHeight() - 5, this.p);
-                if (showBarText) {
-                    this.p.setTextSize(40);
-                    this.p.setColor(Color.WHITE);
-                    this.p.getTextBounds(unit + p.getValue(), 0, 1, r2);
-                    if (popup != null)
-                        popup.setBounds((int) (((r.left + r.right) / 2) - (this.p.measureText(unit + p.getValue()) / 2)) - 14, r.top + (r2.top - r2.bottom) - 26, (int) (((r.left + r.right) / 2) + (this.p.measureText(unit + p.getValue()) / 2)) + 14, r.top);
-                    popup.draw(canvas);
-                    if (isAppended())
-                        canvas.drawText(p.getValue() + unit, (int) (((r.left + r.right) / 2) - (this.p.measureText(unit + p.getValue()) / 2)), r.top - 20, this.p);
-                    else
-                        canvas.drawText(unit + p.getValue(), (int) (((r.left + r.right) / 2) - (this.p.measureText(unit + p.getValue()) / 2)), r.top - 20, this.p);
-                }
-                if (indexSelected == count && listener != null) {
-                    this.p.setColor(Color.parseColor("#33B5E5"));
-                    this.p.setAlpha(100);
-                    canvas.drawPath(p.getPath(), this.p);
-                    this.p.setAlpha(255);
-                }
-                count++;
-            }
-            shouldUpdate = false;
+        float usableHeight;
+        if (mShowBarText) {
+            this.mPaint.setTextSize(VALUE_FONT_SIZE * resources.getDisplayMetrics().scaledDensity);
+            this.mPaint.getTextBounds("$", 0, 1, mTextRect);
+            usableHeight = getHeight() - bottomPadding - Math.abs(mTextRect.top - mTextRect.bottom)
+                    - 24 * resources.getDisplayMetrics().density;
+        } else {
+            usableHeight = getHeight() - bottomPadding;
         }
 
-        ca.drawBitmap(fullImage, 0, 0, null);
+        // Draw x-axis line
+        if (mShowAxis) {
+            mPaint.setColor(mAxisColor);
+            mPaint.setStrokeWidth(2 * resources.getDisplayMetrics().density);
+            mPaint.setAntiAlias(true);
+            canvas.drawLine(0,
+                    getHeight() - bottomPadding + 10 * resources.getDisplayMetrics().density,
+                    getWidth(),
+                    getHeight() - bottomPadding + 10 * resources.getDisplayMetrics().density, mPaint);
+        }
+        float barWidth = (getWidth() - (padding * 2) * mBars.size()) / mBars.size();
 
+        // Maximum y value = sum of all values.
+        for (final Bar bar : mBars) {
+            if (bar.getValue() > maxValue) {
+                maxValue = bar.getValue();
+            }
+        }
+        if (maxValue == 0) {
+            maxValue = 1;
+        }
+
+        int count = 0;
+        SparseArray<Float> valueTextSizes = new SparseArray<Float>();
+        for (final Bar bar : mBars) {
+            // Set bar bounds
+            int left = (int) ((padding * 2) * count + padding + barWidth * count);
+            int top = (int) (getHeight() - bottomPadding
+                    - (usableHeight * (bar.getValue() / maxValue)));
+            int right = (int) ((padding * 2) * count + padding + barWidth * (count + 1));
+            int bottom = (int) (getHeight() - bottomPadding);
+            mBoundsRect.set(left, top, right, bottom);
+
+            // Draw bar
+            if (count == mSelectedIndex && null != mListener) {
+                this.mPaint.setColor(bar.getSelectedColor());
+            } else {
+                this.mPaint.setColor(bar.getColor());
+            }
+            canvas.drawRect(mBoundsRect, this.mPaint);
+
+            // Create selection region
+            Path p = bar.getPath();
+            p.reset();
+            p.addRect(mBoundsRect.left,
+                    mBoundsRect.top,
+                    mBoundsRect.right,
+                    mBoundsRect.bottom,
+                    Path.Direction.CW);
+            bar.getRegion().set(mBoundsRect.left,
+                    mBoundsRect.top,
+                    mBoundsRect.right,
+                    mBoundsRect.bottom);
+
+            // Draw x-axis label text
+            if (mShowAxis) {
+                this.mPaint.setColor(bar.getLabelColor());
+                this.mPaint.setTextSize(AXIS_LABEL_FONT_SIZE
+                        * resources.getDisplayMetrics().scaledDensity);
+                float textWidth = this.mPaint.measureText(bar.getName());
+                // Decrease text size to fit and not overlap with other labels.
+                while (right - left + (padding * LABEL_PADDING_MULTIPLIER) < textWidth) {
+                    this.mPaint.setTextSize(this.mPaint.getTextSize() - 1);
+                    textWidth = this.mPaint.measureText(bar.getName());
+                }
+                int x = (int) (((mBoundsRect.left + mBoundsRect.right) / 2) - (textWidth / 2));
+                int y = (int) (getHeight() - 3 * resources.getDisplayMetrics().scaledDensity);
+                canvas.drawText(bar.getName(), x, y, this.mPaint);
+            }
+
+            // Draw value text
+            if (mShowBarText) {
+                this.mPaint.setTextSize(VALUE_FONT_SIZE
+                        * resources.getDisplayMetrics().scaledDensity);
+                this.mPaint.setColor(Color.WHITE);
+                this.mPaint.getTextBounds(bar.getValueString(), 0, 1, mTextRect);
+
+                int boundLeft = (int) (((mBoundsRect.left + mBoundsRect.right) / 2)
+                        - (this.mPaint.measureText(bar.getValueString()) / 2)
+                        - 10 * resources.getDisplayMetrics().density);
+                int boundTop = (int) (mBoundsRect.top + (mTextRect.top - mTextRect.bottom)
+                        - 18 * resources.getDisplayMetrics().density);
+                int boundRight = (int) (((mBoundsRect.left + mBoundsRect.right) / 2)
+                        + (this.mPaint.measureText(bar.getValueString()) / 2)
+                        + 10 * resources.getDisplayMetrics().density);
+
+                // Limit popup width to bar width
+                if (boundLeft < mBoundsRect.left) {
+                    boundLeft = mBoundsRect.left - ((int) padding / 2);
+                }
+                if (boundRight > mBoundsRect.right) {
+                    boundRight = mBoundsRect.right + ((int) padding / 2);
+                }
+
+                popup.setBounds(boundLeft, boundTop, boundRight, mBoundsRect.top);
+                popup.draw(canvas);
+
+                // Check cache to see if we've done this calculation before
+                if (0 > valueTextSizes.indexOfKey(bar.getValueString().length())) {
+                    while (this.mPaint.measureText(bar.getValueString()) > boundRight - boundLeft) {
+                        this.mPaint.setTextSize(this.mPaint.getTextSize() - (float) 1);
+                    }
+                    valueTextSizes.put(bar.getValueString().length(), mPaint.getTextSize());
+                } else {
+                    this.mPaint.setTextSize(valueTextSizes.get(bar.getValueString().length()));
+                }
+                canvas.drawText(bar.getValueString(),
+                        (int) (((mBoundsRect.left + mBoundsRect.right) / 2)
+                                - (this.mPaint.measureText(bar.getValueString())) / 2),
+                        mBoundsRect.top - (mBoundsRect.top - boundTop) / 2f
+                                + (float) Math.abs(mTextRect.top - mTextRect.bottom) / 2f * 0.7f,
+                        this.mPaint
+                );
+            }
+            count++;
+        }
     }
 
     @Override
-    public boolean onTouchEvent(@NotNull MotionEvent event) {
+    public boolean onTouchEvent(MotionEvent event) {
 
         Point point = new Point();
         point.x = (int) event.getX();
         point.y = (int) event.getY();
 
         int count = 0;
-        for (Bar bar : points) {
-            Region r = new Region();
+        Region r = new Region();
+        for (Bar bar : mBars) {
             r.setPath(bar.getPath(), bar.getRegion());
-            if (r.contains(point.x, point.y) && event.getAction() == MotionEvent.ACTION_DOWN) {
-                indexSelected = count;
-            } else if (event.getAction() == MotionEvent.ACTION_UP) {
-                if (r.contains(point.x, point.y) && listener != null) {
-                    listener.onClick(indexSelected);
-                }
-                indexSelected = -1;
+            switch (event.getAction()) {
+                default:
+                    break;
+                case MotionEvent.ACTION_DOWN:
+                    if (r.contains(point.x, point.y)) {
+                        mSelectedIndex = count;
+                        postInvalidate();
+                    }
+                    break;
+                case MotionEvent.ACTION_UP:
+                    if (count == mSelectedIndex
+                            && mListener != null
+                            && r.contains(point.x, point.y)) {
+                        mListener.onClick(mSelectedIndex);
+                    }
+                    break;
             }
             count++;
         }
-
-        if (event.getAction() == MotionEvent.ACTION_DOWN || event.getAction() == MotionEvent.ACTION_UP) {
-            shouldUpdate = true;
+        // Reset selection
+        if (MotionEvent.ACTION_UP == event.getAction()
+                || MotionEvent.ACTION_CANCEL == event.getAction()) {
+            mSelectedIndex = -1;
             postInvalidate();
         }
-
-
         return true;
     }
 
     public void setOnBarClickedListener(OnBarClickedListener listener) {
-        this.listener = listener;
+        this.mListener = listener;
     }
 
     public interface OnBarClickedListener {

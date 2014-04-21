@@ -14,6 +14,7 @@
             style="?android:textAppearanceMedium"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
             android:layout_gravity="center"
             android:padding="32dp"
             android:text="@string/nocpu_data"
@@ -22,7 +23,7 @@
         <com.echo.holographlibrary.BarGraph
             android:id="@+id/graph"
             android:layout_width="match_parent"
-            android:layout_height="220dp"
+            android:layout_height="260dp"
             android:layout_marginTop="10dp" />
 
         <TextView
@@ -57,7 +58,7 @@
             android:id="@+id/statisticListView"
             android:layout_width="fill_parent"
             android:layout_height="fill_parent"
-            android:layout_marginTop="250dp" />
+            android:layout_marginTop="290dp" />
 
     </RelativeLayout>
 

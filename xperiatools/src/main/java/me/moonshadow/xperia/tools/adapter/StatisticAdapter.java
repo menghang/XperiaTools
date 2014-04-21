@@ -92,12 +92,6 @@ public class StatisticAdapter extends ArrayAdapter<statisticInit> {
                     "No Data found for adapter.");
         }
 
-        /* Small animation effect */
-        int delay = (position * 200);
-        Animation animation = AnimationUtils.loadAnimation(getContext(), R.anim.right_to_left);
-        animation.setStartOffset(delay);
-        row.setAnimation(animation);
-
         return row;
     }
 
